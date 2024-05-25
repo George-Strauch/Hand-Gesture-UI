@@ -1,0 +1,16 @@
+
+body {
+    background-color: #606060;
+}
+#canvas {
+    /* Insert your CSS properties here. For example: */
+    background-color: slategray;
+    width: 100vh;
+    height: 100vh;
+}
+
+#selected_section {
+    /* Insert your CSS properties here. For example: */
+    font-weight: bold;
+    color: #333333;
+}
