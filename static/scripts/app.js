@@ -1,6 +1,6 @@
 
 let main_wheel_color = "#5B7C99"
-let n_slices = 8
+let n_slices = 5
 let n = 0
 
 let socket = io();
@@ -11,13 +11,16 @@ function receive_input(msg) {
     n = n + 1;
     n = n % n_slices
     console.log("getting server message")
-    console.log(n)
-
-    draw()
+    console.log(msg)
+    draw(msg["direction"])
 }
 
 
-function draw() {
+function draw(highlight) {
+    console.log("drawing")
+    console.log(highlight)
+    console.log("==========")
+
     let canvas = document.getElementById("canvas");
     let ctx = canvas.getContext("2d");
     let beginAngle = 0;
@@ -26,7 +29,7 @@ function draw() {
         beginAngle = endAngle;
         endAngle = endAngle + 2 * Math.PI / n_slices;
         ctx.beginPath();
-        if (i===n){
+        if (i===highlight){
             ctx.fillStyle = "#FF0000";
         }
         else {
