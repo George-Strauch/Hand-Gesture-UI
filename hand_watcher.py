@@ -15,7 +15,10 @@ def max_min(max, min, value):
 
 
 def vector_angle(direction):
+    if np.linalg.norm(direction) < 0.5:
+        return 0.0
     normalized_vector = direction / np.linalg.norm(direction)
+    print("normalized_vector", normalized_vector)
     angle = np.arctan2(normalized_vector[1], normalized_vector[0])
     if angle < 0:
         angle += 2 * np.pi
@@ -29,7 +32,7 @@ def vector_angle(direction):
 class HandState:
     def __init__(self):
         self.nth_state = 0
-        self.n_states = 7
+        self.n_states = 20
         self.state = {}
         self.state_serializable = {}
         self.delta_t = 0.000001
@@ -38,8 +41,10 @@ class HandState:
         self.action = ""
         self.radial_section = 0
         self.n_slices = 5
+        self.click = False
 
     def update(self, single_hand):
+        print("update ", not bool(single_hand))
         try:
             if not single_hand:
                 self.action = "no_hand"
@@ -61,17 +66,12 @@ class HandState:
             # print(type(self.state["finger_tips_delta_norms"] > 2 * self.state["palm_delta_norms"]))
             # print(type(True))
 
-            if self.action == "hand_found":
-                if "click" not in[x["action"] for x in self.history[-20:]]:
-                    # todo verify click
-                    self.state["click"] = bool(self.state["finger_tips_delta_norms"] < 1.2 * self.state["palm_delta_norms"])
-                self.get_radial_section()
+            self.set_is_click()
         except Exception:
             print(traceback.format_exc())
             print("Exception occurred")
-
-        self.state["click"] = self.state.get("click", False)
-        self.state.update({"action": self.action, "radial_section": self.radial_section})
+        self.get_radial_section()
+        self.state.update({"action": self.action, "radial_section": self.radial_section, "click": self.click})
         for k, v in self.state.items():
             if isinstance(v, np.ndarray):
                 self.state_serializable[k] = v.tolist()
@@ -82,6 +82,28 @@ class HandState:
         self.history.append(self.state)
         # print(f"State updated in: {time.time() - self.last_time}")
 
+    def set_is_click(self):
+        cool_off = 20
+        self.click = False
+
+        if not all(x in self.state for x in ["index_direction_vector_derivative"]):
+            return
+
+        click_history = [x["click"] for x in self.history[-cool_off:]]
+        print("click history", click_history)
+        print("index_direction_vector_derivative ", self.state["index_direction_vector_derivative"])
+        click_condition = bool(self.state["index_direction_vector_derivative"][2] > 1.2)
+
+        if self.action == "no_hand":
+            return
+
+        if not any(click_history):
+            if click_condition:
+                print("CLICK")
+                self.click = True
+        else:
+            print("in cooldown")
+
 
     def get_pointer_vector(self, hand):
         wrist = np.array([hand[0].x, hand[0].y, hand[0].z])
@@ -90,16 +112,15 @@ class HandState:
         vector[0] = -vector[0]
         norm = np.linalg.norm(vector)
         vector = vector / norm
-        vector = np.array([vector[0], vector[1]])
+        # vector = np.array([vector[0], vector[1]])
         info = {
             "index": tip,
             "index_direction_vector": vector,
-
         }
-        if len(self.history) > 0 and not self.history[-1]["action"] == "no_hand":
+        if len(self.history) > 0 and "index_direction_vector" in self.history[-1]:
             info["index_direction_vector_derivative"] = (vector - self.history[-1]["index_direction_vector"])/self.delta_t
         else:
-            info["index_direction_vector_derivative"] = np.zeros(2)
+            info["index_direction_vector_derivative"] = np.zeros(3)
 
         # info["jerk"] = np.linalg.norm((info["index_direction_vector_derivative"] - (self.history[-2]["index_direction_vector_derivative"] if len(self.history) > 2 else np.zeros(2))) / self.delta_t)
         return info
@@ -110,7 +131,7 @@ class HandState:
         tip = np.array([hand[8].x, 1-hand[8].y, hand[8].z])
 
         average_movement = np.zeros_like(tip)
-        if len(self.history) > n_frames and not "no_hand" not in [x["action"] for x in self.history[-n_frames:]]:
+        if len(self.history) > n_frames and all(["tip_with_middle_origin" in x for x in self.history[-n_frames:]]):
             index_history = [x["tip_with_middle_origin"] for x in self.history[-n_frames:]]
             average_movement = np.average(index_history, axis=0)
         movement_vector = average_movement - tip
@@ -132,7 +153,7 @@ class HandState:
         palm = np.array([np.array([h.x, h.y, h.z]) for i, h in enumerate(hand) if i not in tips])
         palm_center = np.mean(palm, axis=0)
 
-        if self.nth_state > 1 and "no_hand" not in [x["action"] for x in self.history[-2:]]:
+        if all(["finger_tips" in x for x in self.history[-2:]]) and len(self.history) > 2:
             finger_tips_delta = np.subtract(finger_tips, self.history[-1]["finger_tips"])
             palm_delta = np.subtract(palm, self.history[-1]["palm"])
             palm_delta_norms = np.mean(np.linalg.norm(palm_delta, axis=1))
@@ -168,7 +189,6 @@ class HandState:
                 if i in [0, 2, 4]
             ]
         )
-
         # Your points are vectors A, B and C
         A = thumb_points[0]
         B = thumb_points[1]
@@ -198,18 +218,13 @@ class HandState:
         }
 
     def get_radial_section(self):
-        # todo set to change from current by mod operator of the previous section
-        # n_weights = 2
-        # weights = [2 ** x for x in range(n_weights)]
-        # weights = list(reversed([a / sum(weights) for a in weights]))
-        # if len(self.history) < n_weights+3:
-        #     return 0
-        # direction = np.sum(
-        #     [a["index_direction_vector"] * b for a, b in zip(self.history[-len(weights):], weights)],
-        #     axis=0
-        # )
         direction = self.state["index_direction_vector"]
-        angle = vector_angle(direction)
+        print("direction", direction)
+        direction_2d = np.array([direction[0], direction[1]])
+        print("direction_2d", direction_2d)
+        angle = vector_angle(direction_2d)
+        print("angle ", angle)
+        print()
         CONST = 5
         slice_angle = 2*math.pi / CONST
         x = int(angle // slice_angle)
@@ -217,40 +232,7 @@ class HandState:
         self.radial_section = x
         # self.state["radial_section"] = x
 
-    # def get_radial_section(self):
-    #     n_frame_wait_to_move = 3
-    #     threshold = .5
-    #     # over_thresh = np.linalg.norm(self.state["index_direction_vector"]) > threshold
-    #     over_thresh = True
-    #     print(np.linalg.norm(self.state["index_direction_vector"]))
-    #     direction = ""
-    #     direction_vector = self.state["index_direction_vector"] / np.linalg.norm(self.state["index_direction_vector"])
-    #     if over_thresh:
-    #         print("--1: ", self.state["index"][1], self.state["palm_center"][1])
-    #         if self.state["index"][1] > self.state["palm_center"][1]:
-    #             if direction_vector[0] > 0:
-    #                 direction = "-"
-    #             else:
-    #                 direction = "+"
-    #         else:
-    #             if direction_vector[0] > 0:
-    #                 direction = "+"
-    #             else:
-    #                 direction = "-"
-    #     if direction:
-    #         hist = [x["action"] for x in self.history[-n_frame_wait_to_move:]]
-    #         if "+" in hist or "-" in hist:
-    #             # print("----------", hist)
-    #             self.action = ""
-    #         else:
-    #             self.action = direction
-    #             if direction == "+":
-    #                 self.radial_section = (self.radial_section+1) % self.n_slices
-    #             else:
-    #                 self.radial_section = (self.radial_section-1) % self.n_slices
-    #     self.state["radial_section"] = self.radial_section
 
-# https://www.youtube.com/watch?v=Ercd-Ip5PfQ
 class Runner:
     def __init__(self):
         self.will_plot = 0
