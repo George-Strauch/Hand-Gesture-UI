@@ -22,10 +22,9 @@ def background_thread():
     hand = Runner()
     while True:
         count += 1
-        direction = hand.process_frame(count)
-        print(direction)
-
-        socketio.emit('server_response', {'direction': direction})
+        state = hand.process_frame(count)
+        # print(state)
+        socketio.emit('server_response', state)
 
 @socketio.on('connect')
 def test_connect():

@@ -8,15 +8,14 @@ socket.on('connect', receive_input);
 socket.on('server_response', receive_input);
 
 function receive_input(msg) {
-    n = n + 1;
-    n = n % n_slices
     console.log("getting server message")
     console.log(msg)
-    draw(msg["direction"])
+    draw(msg)
 }
 
 
-function draw(highlight) {
+function draw(msg) {
+    let highlight = msg["radial_section"];
     console.log("drawing")
     console.log(highlight)
     console.log("==========")
@@ -30,7 +29,12 @@ function draw(highlight) {
         endAngle = endAngle + 2 * Math.PI / n_slices;
         ctx.beginPath();
         if (i===highlight){
-            ctx.fillStyle = "#FF0000";
+            if(msg["click"]){
+                ctx.fillStyle = "#0000FF";
+            } else {
+                ctx.fillStyle = "#FF0000";
+            }
+
         }
         else {
             ctx.fillStyle = main_wheel_color;
