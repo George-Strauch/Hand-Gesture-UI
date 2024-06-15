@@ -80,6 +80,7 @@ class HandState:
             return
         click_history = [x["click"] for x in self.history[-cool_off:]]
         z_movements = [self.state["index_direction_vector_derivative"][2]] + [x["index_direction_vector_derivative"][2] for x in self.history[-4:]]
+        # todo condition should be if index point moves more than palm center
         click_condition = bool(np.mean(z_movements) > 0.6)
         if not any(click_history):
             if click_condition:
