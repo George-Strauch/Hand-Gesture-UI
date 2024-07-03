@@ -1,0 +1,22 @@
+# PyCharm specific #
+.idea/
+
+# Python byte-code files #
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py3
+
+# Jupyter notebook checkpoints #
+.ipynb
+
+# Flask files #
+*.flaskenv
+
+# Environment and install files #
+.env
+.venv/
+*.log
+pip-log.txt
+pip-delete-this-directory.txt
