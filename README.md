@@ -7,19 +7,17 @@ A project that aims at performing specific actions using hand gestures. It lever
 This repository contains the source code for hand gesture recognition, state flow, and display. The project is built with the goal of creating an intuitive way of interfacing with technology. using a flask server to provide information to a front end interface
 ## Features
 
-- **Computer Vision**: Uses computer vision techniques for accurate gesture recognition.
-- **Hand Detection**: Detects hand in the given input accurately for interpreting gestures.
-- **Actions**: Performs set of specific actions based on recognized gesture.
+- **Active / Inactive**: Ability to determine if the user is in a state where they want their hand gesture to be detected and used the position of the hand relative to the body.
+- **Gesture Detection**: Detects hand gesture action within the context of what state the interface is in.
+- **State Transforms**: Transforms between states such as awake / asleep or sub-menus
+- **Actions**: Performs set of specific actions based on recognized gesture and state. In the current context, this is being used to control a smart tv, however it can easily be abstracted to other actions or uses. 
 
 ## Setup
-
 todo
 
 ## Project structure
 todo
 
 ## Usage
-
 todo
 
-With this approach, simple hand gestures can be used to perform actions without the need for traditional input methods.
