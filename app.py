@@ -8,6 +8,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
 socketio = SocketIO(app)
 
+
 @app.route('/')
 def index():
     print(os.listdir("."))
@@ -24,6 +25,7 @@ def background_thread():
         state = hand.process_frame(count)
         # print(state)
         socketio.emit('server_response', state)
+
 
 @socketio.on('connect')
 def test_connect():
