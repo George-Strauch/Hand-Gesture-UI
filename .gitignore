@@ -19,4 +19,66 @@ __pycache__/
 .venv/
 *.log
 pip-log.txt
-pip-delete-this-directory.txt
+pip-delete-this-directory.txtimport tkinter as tk
+import math
+from time import sleep
+import logging
+
+
+class CircularMenu(tk.Toplevel):
+    def __init__(self, root, labels, highlight_idx=None):
+        super().__init__(root)
+        self.logger = logging.getLogger("asdf")
+        self.labels = labels
+        self.highlight_idx = highlight_idx
+
+        self.root = root
+        self.title("Circular Navigation")
+        self.geometry("500x500")
+        self.setup_canvas()
+        self.canvas = None
+
+    def setup_canvas(self):
+        self.canvas = tk.Canvas(self, width=500, height=500, bg='white')
+        self.canvas.pack()
+        self.draw_circle_nav()
+
+    def draw_circle_nav(self):
+        width = self.canvas.winfo_width()
+        height = self.canvas.winfo_height()
+        radius = min(width, height) // 2 - 160
+
+        cx, cy = width // 2, height // 2
+        angle_step = 2.0 * math.pi / len(self.labels)
+
+        for i, label in enumerate(self.labels):
+            start_angle = i * angle_step
+            end_angle = start_angle + angle_step
+
+            outline = "red" if i == self.highlight_idx else "black"
+
+            # Draw the segment
+            self.canvas.create_arc(cx - radius, cy - radius, cx + radius, cy + radius,
+                                   start=start_angle * 180 / math.pi, extent=angle_step * 180 / math.pi,
+                                   outline=outline, fill="", width=2)
+
+            # Draw the label
+            label_angle = start_angle + angle_step / 2
+            label_x = cx + (radius * 0.5) * math.cos(label_angle)
+            label_y = cy + (radius * 0.5) * math.sin(label_angle)
+            self.canvas.create_text(label_x, label_y, text=label)
+
+
+def main():
+    root = tk.Tk()
+    root.withdraw()
+
+    labels = ["Label1", "Label2", "Label3", "Label4", "Label5"]
+    highlight_idx = 2  # The third slice will be highlighted
+
+    menu = CircularMenu(root, labels, highlight_idx)
+    menu.mainloop()
+
+
+if __name__ == "__main__":
+    main()
