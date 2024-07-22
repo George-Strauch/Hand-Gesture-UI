@@ -60,16 +60,17 @@ class HandMath:
         for finger, points in tips.items():
             knuckel = np.array([hand[points[0]].x, hand[points[0]].y, hand[points[0]].z])
             tip = np.array([hand[points[1]].x, hand[points[1]].y, hand[points[1]].z])
-            vector = np.subtract(tip, knuckel)
-            # todo x or y here?
-            vector[0] = -vector[0]
+            vector = np.subtract(knuckel, tip)
             norm = np.linalg.norm(vector)
+            norm_2d = (vector[0] ** 2 + vector[1] ** 2) ** 0.5
             vector = vector / norm
             info.update(
                 {
                     f"{finger}_tip": tip,
                     f"{finger}_direction": vector,
                     f"{finger}_norm": norm,
+                    f"{finger}_norm2d": norm_2d,
+
                 }
             )
         return info
@@ -89,17 +90,20 @@ class HandMath:
             "index_direction", np.array([0, 0, 0])
         )
         direction_2d = np.array([direction[0], direction[1]])
+        print(self.variables.get("index_norm"))
+        print(self.variables.get("index_norm2d"))
+        print(self.variables.get("index_direction", [0])[2])
+        # print(self.variables["index_norm2d"] / self.variables["index_norm"])
+
+        print("------------------------")
+
         angle = self.vector_angle(direction_2d)
         return angle
-        # todo to determine which radial slice
-        # const = 5
-        # slice_angle = 2 * math.pi / const
-        # x = int(angle // slice_angle)
-        # print(f"enum {angle} // {slice_angle} = {x}")
+
 
     def get_radial_slice_index(self, labels):
         if "radial_angle" in self.variables:
-            print(self.variables["radial_angle"])
+            # print(self.variables["radial_angle"])
             const = len(labels)
             slice_angle = 2 * math.pi / const
             angle = self.variables["radial_angle"]

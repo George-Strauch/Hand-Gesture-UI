@@ -1,5 +1,7 @@
 import math
 
+import numpy as np
+
 from hand_math import HandMath
 from video_handler import VideoHandler
 from action_handler import ActionHandler
@@ -14,7 +16,7 @@ class StateController:
     current state: current state that the view will define what is showing
     """
     def __init__(self):
-        self.radial_menu_labels = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+        self.radial_menu_labels = ["Play/Pause", "Volume", "Mouse"]
         self.actions = ActionHandler
         self.hand_oracle = HandMath()
         self.video = VideoHandler()
@@ -42,16 +44,30 @@ class StateController:
         if not hand, pass
         if current state.action is asleep, set it to nav wheel
         """
+        self.current_state = {"menu_labels": self.radial_menu_labels,}
         if self.current_hand is not None:
-            self.current_state = {
-                "selected_idx": self.hand_oracle.get_radial_slice_index(self.radial_menu_labels),
-                "show": True,
-                "show_menu": True
-            }
+            index_norm_thresh = 0.6
+            cross_norm = np.linalg.norm(np.cross(self.hand_oracle.variables["index_direction"], self.hand_oracle.variables["middle_direction"]))
+            print(cross_norm)
+            if cross_norm > 0.5:
+                color = "blue"
+            else:
+                color = f"#FFFF{hex(int(cross_norm * 255))[2:].zfill(2).upper()}"
+            self.current_state.update(
+                {
+                    "selected_idx": self.hand_oracle.get_radial_slice_index(self.radial_menu_labels),
+                    "show": True,
+                    "show_menu": True,
+                    "color": color,
+                    # "color": f"#FFFF{hex(int(0.5 * 255))[2:].zfill(2).upper()}"
+                }
+            )
         else:
-            self.current_state = {
-                "show": False,
-            }
+            self.current_state.update(
+                {
+                    "show": False,
+                }
+            )
 
 
 if __name__ == '__main__':
