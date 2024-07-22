@@ -36,8 +36,8 @@ class HandMath:
             print(traceback.format_exc())
             print("Exception occurred")
             assert False
-        self.get_radial_section()
-        self.variables.update({"radial_section": self.radial_section})
+        angle = self.get_radial_direction()
+        self.variables.update({"radial_angle": angle})
         for k, v in self.variables.items():
             if isinstance(v, np.ndarray):
                 self.vars_serializable[k] = v.tolist()
@@ -84,7 +84,7 @@ class HandMath:
             angle += 2 * np.pi
         return angle
 
-    def get_radial_section(self):
+    def get_radial_direction(self):
         direction = self.variables.get(
             "index_direction", np.array([0, 0, 0])
         )
@@ -96,3 +96,14 @@ class HandMath:
         # slice_angle = 2 * math.pi / const
         # x = int(angle // slice_angle)
         # print(f"enum {angle} // {slice_angle} = {x}")
+
+    def get_radial_slice_index(self, labels):
+        if "radial_angle" in self.variables:
+            print(self.variables["radial_angle"])
+            const = len(labels)
+            slice_angle = 2 * math.pi / const
+            angle = self.variables["radial_angle"]
+            return int(angle // slice_angle)
+        else:
+            print("radial_angle not found")
+            return 0

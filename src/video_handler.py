@@ -18,8 +18,8 @@ class VideoHandler:
                 20.0,
                 (640, 480)
             )
-
-        self.hand_model = mp.solutions.hands.hands_model.Hands(
+        mpHands = mp.solutions.hands
+        self.hand_model = mpHands.Hands(
             # static_image_mode=True,
             model_complexity=1,
             static_image_mode=False,
@@ -28,7 +28,9 @@ class VideoHandler:
             min_tracking_confidence=0.5
         )
 
-    def yield_frame(self):
+    def iter_frames(self):
+        print("starting frames loop")
+        hands = []
         while True:
             success, img = self.cap.read()
             if not success:
@@ -38,16 +40,16 @@ class VideoHandler:
                 self.video_out.write(img)
             else:
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                hands = None
                 if self.detect:
                     hands = self.get_hands_from_frame(img)
+            # print(hands)
 
             yield {"raw_image": img, "hands": hands}
         yield None
 
-    def iter_frames(self, func=None):
+    def run(self, func=None):
         try:
-            for frame_data in self.yield_frame():
+            for frame_data in self.iter_frames():
                 img = frame_data["raw_image"]
                 if func is not None:
                     new_img = func(img)
@@ -65,8 +67,10 @@ class VideoHandler:
         results = results.multi_hand_landmarks
         if results:
             # todo determine proper hand to look at
-            hand = results[0].landmark
-        return results
+            hands = [results[0].landmark]
+        else:
+            hands = []
+        return hands
 
 
 if __name__ == '__main__':

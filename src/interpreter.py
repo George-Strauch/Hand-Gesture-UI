@@ -9,10 +9,7 @@ import matplotlib.pyplot as plt
 GRAB_MAD = 0.0
 
 
-
-
-
-class HandState:
+class HandState1:
     def __init__(self):
         self.nth_state = 0
         self.n_states = 20

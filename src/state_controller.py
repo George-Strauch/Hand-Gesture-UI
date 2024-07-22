@@ -1,3 +1,5 @@
+import math
+
 from hand_math import HandMath
 from video_handler import VideoHandler
 from action_handler import ActionHandler
@@ -12,6 +14,7 @@ class StateController:
     current state: current state that the view will define what is showing
     """
     def __init__(self):
+        self.radial_menu_labels = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
         self.actions = ActionHandler
         self.hand_oracle = HandMath()
         self.video = VideoHandler()
@@ -19,12 +22,11 @@ class StateController:
         self.logger = logging.getLogger(self.__class__.__name__)
         self.current_state = {}
 
-    def get_state(self):
+    def iter_states(self):
         self.logger.debug('get_state')
-        while True:
-            self.logger.debug("getting current state")
-            frame_info = self.video.yield_frame()
-            hands = frame_info['hands']
+        for frame_data in self.video.iter_frames():
+            self.logger.debug("processed a frame from the video handler. processing hands")
+            hands = frame_data['hands']
             if len(hands) > 0:
                 self.logger.info("hand found")
                 self.current_hand = hands[0]
@@ -40,4 +42,17 @@ class StateController:
         if not hand, pass
         if current state.action is asleep, set it to nav wheel
         """
-        pass
+        if self.current_hand is not None:
+            self.current_state = {
+                "selected_idx": self.hand_oracle.get_radial_slice_index(self.radial_menu_labels),
+                "show": True,
+                "show_menu": True
+            }
+        else:
+            self.current_state = {
+                "show": False,
+            }
+
+
+if __name__ == '__main__':
+    state_controller = StateController()
