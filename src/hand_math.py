@@ -90,12 +90,11 @@ class HandMath:
             "index_direction", np.array([0, 0, 0])
         )
         direction_2d = np.array([direction[0], direction[1]])
-        print(self.variables.get("index_norm"))
-        print(self.variables.get("index_norm2d"))
-        print(self.variables.get("index_direction", [0])[2])
+        # print(self.variables.get("index_norm"))
+        # print(self.variables.get("index_norm2d"))
+        # print(self.variables.get("index_direction", [0])[2])
         # print(self.variables["index_norm2d"] / self.variables["index_norm"])
-
-        print("------------------------")
+        # print("------------------------")
 
         angle = self.vector_angle(direction_2d)
         return angle

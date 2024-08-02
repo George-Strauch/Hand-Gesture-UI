@@ -1,3 +1,4 @@
+import json
 import tkinter as tk
 import math
 from time import sleep
@@ -19,23 +20,26 @@ class DisplayModule(tk.Toplevel):
         # self.attributes("-alpha", 0.5 )  # Make white color transparent
         self.canvas = tk.Canvas(self, width=400, height=400, bg='white', highlightthickness=0)
         self.canvas.pack()
-        self.hidden = False
+        self.is_hidden = False
+        self.last_state = None
         # self.draw_circle_nav()
 
-    def draw_circle_nav(self, highlight_index=0, color="red", labels=[]):
+        self.nav_wheel_vars = {}
+
+    def draw_circle_nav(self, selected_index, color, menu_labels):
         self.canvas.delete("all")  # Clear the canvas
         r = min(self.width, self.height) // 4
         cx, cy = self.width // 2, self.width // 2
 
-        print(labels)
+        # print(labels)
 
-        angle_step = 2.0 * math.pi / len(labels)
-        print("highlight_index", highlight_index)
-        for i, label in enumerate(labels):
+        angle_step = 2.0 * math.pi / len(menu_labels)
+        # print("highlight_index", highlight_index)
+        for i, label in enumerate(menu_labels):
             start_angle = i * angle_step
             end_angle = start_angle + angle_step
 
-            if i != highlight_index:
+            if i != selected_index:
                 c = "gray"
             else:
                 c = color
@@ -64,20 +68,36 @@ class DisplayModule(tk.Toplevel):
         :param info: dictionary that defines what should be shown in the view
         :return: None
         """
-        print(info)
-        if info.get("show", False):
-            if info["show_menu"]:
-                if self.hidden:
-                    self.deiconify()  # Show the menu window
-                self.hidden = False
-                self.draw_circle_nav(
-                    info["selected_idx"],
-                    color=info.get("color", "red"),
-                    labels=info["menu_labels"]
-                )
+        # print(info)
+        # print(json.dumps(info, indent=4))
+        print("----------------------------------")
+        nav_wheel_fields = ["selected_index", "color", "menu_labels"]
+        if info.get("activated", False):
+            print("activated")
+            print(info["state"])
+            print(f"is hidden {self.is_hidden}")
+            if info["state"] == "menu":
+                print("view menu")
+                self.nav_wheel_vars = dict((k, v) for k, v in info.items() if k in nav_wheel_fields)
+                # print(f"equal: {self.nav_wheel_vars != self.last_state}")
+                # todo these are equal and it is preventing the view from showing
+                if self.nav_wheel_vars != self.last_state:
+                    print(f"nequal: {self.nav_wheel_vars != self.last_state}")
+                    print("updating")
+                    if self.is_hidden:
+                        print("showing")
+                        self.deiconify()  # Show the menu window
+                    self.is_hidden = False
+                    self.draw_circle_nav(**self.nav_wheel_vars)
+                    self.last_state = self.nav_wheel_vars
+                else:
+                    # dont do anything since this the menu should not have changed
+                    pass
         else:
-            self.withdraw()
-            self.hidden = True
+            if not self.is_hidden:
+                print("hiding")
+                self.withdraw()
+                self.is_hidden = True
 
 
 def control_window(menu):
