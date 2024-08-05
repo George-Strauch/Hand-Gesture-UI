@@ -25,6 +25,7 @@ class DisplayModule(tk.Toplevel):
         # self.draw_circle_nav()
 
         self.nav_wheel_vars = {}
+        self.nav_wheel_fields = ["selected_index", "color", "menu_labels"]
 
     def draw_circle_nav(self, selected_index, color, menu_labels):
         self.canvas.delete("all")  # Clear the canvas
@@ -71,18 +72,18 @@ class DisplayModule(tk.Toplevel):
         # print(info)
         # print(json.dumps(info, indent=4))
         print("----------------------------------")
-        nav_wheel_fields = ["selected_index", "color", "menu_labels"]
+
         if info.get("activated", False):
             print("activated")
             print(info["state"])
             print(f"is hidden {self.is_hidden}")
             if info["state"] == "menu":
                 print("view menu")
-                self.nav_wheel_vars = dict((k, v) for k, v in info.items() if k in nav_wheel_fields)
-                # print(f"equal: {self.nav_wheel_vars != self.last_state}")
+                self.nav_wheel_vars = dict((k, v) for k, v in info.items() if k in self.nav_wheel_fields)
+                print(f"equal: {self.nav_wheel_vars != self.last_state}")
                 # todo these are equal and it is preventing the view from showing
                 if self.nav_wheel_vars != self.last_state:
-                    print(f"nequal: {self.nav_wheel_vars != self.last_state}")
+                    # print(f"not equal: {self.nav_wheel_vars != self.last_state}")
                     print("updating")
                     if self.is_hidden:
                         print("showing")

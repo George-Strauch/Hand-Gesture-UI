@@ -18,8 +18,8 @@ class VideoHandler:
                 20.0,
                 (640, 480)
             )
-        mpHands = mp.solutions.hands
-        self.hand_model = mpHands.Hands(
+        mp_hands = mp.solutions.hands
+        self.hand_model = mp_hands.Hands(
             # static_image_mode=True,
             model_complexity=1,
             static_image_mode=False,
@@ -34,7 +34,7 @@ class VideoHandler:
         while True:
             success, img = self.cap.read()
             if not success:
-                print("end")
+                print("PLEASE PLUG IN CAMERA")
                 break
             if self.recording:
                 self.video_out.write(img)

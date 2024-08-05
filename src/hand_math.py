@@ -6,8 +6,7 @@ import math
 
 class HandMath:
     """
-    todo update
-    move all logical states to state controller
+    performs mathematical operations on hand
     """
     def __init__(self):
         self.nth_state = 0
@@ -31,13 +30,16 @@ class HandMath:
                 self.variables = {
                     **self.get_finger_directions(single_hand),
                 }
+                self.variables.update(**self.get_relative_angels())
+
+                angle = self.get_radial_direction()
+                self.variables.update({"radial_angle": angle})
             self.nth_state += 1
         except Exception:
             print(traceback.format_exc())
             print("Exception occurred")
             assert False
-        angle = self.get_radial_direction()
-        self.variables.update({"radial_angle": angle})
+
         for k, v in self.variables.items():
             if isinstance(v, np.ndarray):
                 self.vars_serializable[k] = v.tolist()
@@ -58,9 +60,9 @@ class HandMath:
         }
         info = {}
         for finger, points in tips.items():
-            knuckel = np.array([hand[points[0]].x, hand[points[0]].y, hand[points[0]].z])
+            knuckle = np.array([hand[points[0]].x, hand[points[0]].y, hand[points[0]].z])
             tip = np.array([hand[points[1]].x, hand[points[1]].y, hand[points[1]].z])
-            vector = np.subtract(knuckel, tip)
+            vector = np.subtract(knuckle, tip)
             norm = np.linalg.norm(vector)
             norm_2d = (vector[0] ** 2 + vector[1] ** 2) ** 0.5
             vector = vector / norm
@@ -73,6 +75,29 @@ class HandMath:
 
                 }
             )
+        return info
+
+    def get_relative_angels(self):
+        middle_pointer_dot = np.linalg.norm(
+            np.dot(self.variables["index_direction"], self.variables["middle_direction"])
+        )
+        middle_pointer_cross = np.linalg.norm(
+            np.cross(self.variables["index_direction"], self.variables["middle_direction"])
+        )
+
+        pointer_thumb_dot = np.linalg.norm(
+            np.dot(self.variables["index_direction"], self.variables["thumb_direction"])
+        )
+
+        pointer_thumb_cross = np.linalg.norm(
+            np.cross(self.variables["index_direction"], self.variables["thumb_direction"])
+        )
+        info = {
+            "pointer_thumb_dot": pointer_thumb_dot,
+            "middle_pointer_dot": middle_pointer_dot,
+            "middle_pointer_cross": middle_pointer_cross,
+            "pointer_thumb_cross": pointer_thumb_cross
+        }
         return info
 
     @staticmethod

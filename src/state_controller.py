@@ -30,10 +30,10 @@ class StateController:
         # self.show_bool = lambda: self.frames_since_hand < self.n_frames_buffer
 
     def show_bool(self):
+        print(self.frames_since_hand, self.frames_with_hand, self.frames_until_active)
         x = self.frames_since_hand < self.n_frames_buffer and self.frames_until_active == 0
         # print(x)
         return x
-
 
     def iter_states(self):
         self.logger.debug('get_state')
@@ -60,49 +60,84 @@ class StateController:
         """
         Determines current state of the view
         """
-        self.current_state.update(
-            {"frames_since_last": self.frames_since_hand, "frames_with_hand": self.frames_with_hand, "menu_labels": self.radial_menu_labels,}
-        )
-        if self.current_hand is not None and self.frames_until_active == 0:
-            state = "menu"
-            index_norm_thresh = 0.5
-            cross_norm = np.linalg.norm(np.cross(self.hand_oracle.variables["index_direction"], self.hand_oracle.variables["middle_direction"]))
-            # print(cross_norm)
-            if cross_norm > index_norm_thresh:
-                state = "click"
-                color = "blue"
-            else:
-                # color = f"#FFFF{hex(int(cross_norm * 255))[2:].zfill(2).upper()}"
-                color = "#FFFF58"
+        defaults = {
+            "frames_since_last": self.frames_since_hand,
+            "frames_with_hand": self.frames_with_hand,
+            "menu_labels": self.radial_menu_labels
+        }
+        self.current_state.update(defaults)
+        state = self.current_state.get("state", "menu")
+
+        if self.frames_until_active == 0:
+            # if there is a hand and not in cooldown
+            color = "#FFFF58"
+            middle_pointer_cross_prod_thresh = 0.5
+
+            match state:
+                case "menu":
+                    if self.current_hand is not None:
+                        print(f"NO CLICK {self.hand_oracle.variables["middle_pointer_cross"]} !> {middle_pointer_cross_prod_thresh}")
+                        if self.hand_oracle.variables["middle_pointer_cross"] > middle_pointer_cross_prod_thresh:
+                            print(f"menu selection here in update state because:")
+                            print(f"{self.hand_oracle.variables["middle_pointer_cross"]} > {middle_pointer_cross_prod_thresh}")
+                            state = "select_menu_item"
+                case "volume":
+                    pass
+                case "play":
+                    pass
+                case "select_menu_item":
+                    color = "blue"
+                case _:
+                    print(f"DO NOT KNOW WHAT TO DO WITH STATE: {state}")
+                    assert False
+
             self.current_state.update(
                 {
                     "selected_index": self.hand_oracle.get_radial_slice_index(self.radial_menu_labels),
                     "activated": True,
                     "state": state,
                     "color": color,
-                    # "color": f"#FFFF{hex(int(0.5 * 255))[2:].zfill(2).upper()}"
                 }
             )
         else:
             if self.show_bool():
-                # print
-                pass  # leave current state the same
+                if self.frames_since_hand < self.n_frames_buffer:
+                    state = "menu"
+                self.current_state.update(
+                    {
+                        "activated": True,
+                        "state": state,
+                    }
+                )
             else:
+                print("de-activating")
                 self.current_state.update(
                     {
                         "activated": False,
                     }
                 )
 
+
     def perform_actions(self):
         # print(self.current_state)
         # print(self.frames_until_active)
         if self.current_state["activated"]:
             match self.current_state["state"]:
-                case "click":
+                case "select_menu_item":
+                    print("SELECTING MENU ITEM")
+                    # selecting an item from the ment
                     if self.current_state["selected_index"] == 0:
                         self.actions.toggle_play()
                         self.frames_until_active = 40
+                        self.current_state["state"] = "menu"
+
+                    elif self.current_state["selected_index"] == 1:
+                        self.current_state["state"] = "volume"
+                case "volume":
+                    vol = round(self.hand_oracle.variables["pointer_thumb_cross"]*100)
+                    print("setting volume to ", vol)
+                    success = self.actions.set_volume(vol)
+                    # print(success)
                 case _:
                     pass
 

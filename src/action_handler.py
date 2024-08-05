@@ -17,7 +17,7 @@ class ActionHandler:
 
     def set_volume(self, volume):
         """
-        method to set the volume of the computer
+        method to set the volume (% from 0 to 100)
         :param volume: the volume level to set
         """
         try:
