@@ -20,14 +20,16 @@ class DisplayModule(tk.Toplevel):
         # self.attributes("-alpha", 0.5 )  # Make white color transparent
         self.canvas = tk.Canvas(self, width=400, height=400, bg='white', highlightthickness=0)
         self.canvas.pack()
-        self.is_hidden = False
-        self.last_state = None
+        self.color = "#5A7D8A"
+        self.is_hidden = True
+        self.last_state = {"selected_index": -1}
         # self.draw_circle_nav()
+        self.did_draw_volume = False
 
         self.nav_wheel_vars = {}
         self.nav_wheel_fields = ["selected_index", "color", "menu_labels"]
 
-    def draw_circle_nav(self, selected_index, color, menu_labels):
+    def draw_circle_nav(self, selected_index, menu_labels):
         self.canvas.delete("all")  # Clear the canvas
         r = min(self.width, self.height) // 4
         cx, cy = self.width // 2, self.width // 2
@@ -43,7 +45,7 @@ class DisplayModule(tk.Toplevel):
             if i != selected_index:
                 c = "gray"
             else:
-                c = color
+                c = self.color
             # color = "orange" if label == f"{highlight_index}" else "white"
             self.canvas.create_arc(
                 cx - r,
@@ -63,6 +65,12 @@ class DisplayModule(tk.Toplevel):
             label_y = cy + label_radius * -math.sin(label_angle)
             self.canvas.create_text(label_x, label_y, text=label)
 
+    def draw_volume_icon(self, volume_percentage):
+        self.canvas.delete("all")  # Clear the canvas
+        cx, cy = self.width // 2, self.width // 2
+        volume_text = f"{volume_percentage}%"
+        self.canvas.create_text(cx, cy, text=volume_text)
+
     def process_slice_of_time_view(self, info):
         """
         this function is called in a loop forever with info about the current state
@@ -72,28 +80,47 @@ class DisplayModule(tk.Toplevel):
         # print(info)
         # print(json.dumps(info, indent=4))
         print("----------------------------------")
+        print(info)
+        print(f"is hidden {self.is_hidden}")
+        if info["activated"]:
+            print("activated view")
+            match info["state"]:
+                case "menu":
+                    print("view menu")
+                    self.nav_wheel_fields = ["selected_index", "color", "menu_labels"]
+                    self.nav_wheel_vars = {
+                        "selected_index": info["selected_index"],
+                    }
+                    # print(f"equal: {info["selected_index"] != self.last_state["selected_index"]}")
+                    # todo these are equal and it is preventing the view from showing
+                    if "selected_index" in self.last_state and info["selected_index"] != self.last_state["selected_index"]:
+                        # print(f"not equal: {self.nav_wheel_vars != self.last_state}")
+                        print("updating")
+                        print(f"[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[{info['selected_index']}")
+                        self.draw_circle_nav(
+                            selected_index=info["selected_index"],
+                            menu_labels=info["menu_labels"]
+                        )
+                    else:
+                        print("//////////////////////////////")
+                        print(f'last: {self.last_state["selected_index"]} \n new: {info["selected_index"]}')
+                        print("//////////////////////////////")
+                    if "selected_index" not in self.last_state:
+                        self.last_state["selected_index"] = info["selected_index"]
+                case "volume":
+                    self.draw_volume_icon(info.get("volume", 0))
+                case "hidden":
+                        pass
+                case "play":
+                        pass
+                case _:
+                    print("unknown state")
 
-        if info.get("activated", False):
-            print("activated")
-            print(info["state"])
-            print(f"is hidden {self.is_hidden}")
-            if info["state"] == "menu":
-                print("view menu")
-                self.nav_wheel_vars = dict((k, v) for k, v in info.items() if k in self.nav_wheel_fields)
-                print(f"equal: {self.nav_wheel_vars != self.last_state}")
-                # todo these are equal and it is preventing the view from showing
-                if self.nav_wheel_vars != self.last_state:
-                    # print(f"not equal: {self.nav_wheel_vars != self.last_state}")
-                    print("updating")
-                    if self.is_hidden:
-                        print("showing")
-                        self.deiconify()  # Show the menu window
-                    self.is_hidden = False
-                    self.draw_circle_nav(**self.nav_wheel_vars)
-                    self.last_state = self.nav_wheel_vars
-                else:
-                    # dont do anything since this the menu should not have changed
-                    pass
+
+            if self.is_hidden:
+                print("showing")
+                self.deiconify()  # Show the menu window
+                self.is_hidden = False
         else:
             if not self.is_hidden:
                 print("hiding")

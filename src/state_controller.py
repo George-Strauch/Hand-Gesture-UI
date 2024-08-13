@@ -22,17 +22,18 @@ class StateController:
         self.video = VideoHandler()
         self.current_hand = None
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.current_state = {"activated": False}
+        self.current_state = {"activated": False, "state": "menu", "menu_labels": self.radial_menu_labels}
         self.n_frames_buffer = 5
         self.frames_since_hand = 0
         self.frames_with_hand = 0
-        self.frames_until_active = 0
+        self.frames_until_active = self.n_frames_buffer
+
         # self.show_bool = lambda: self.frames_since_hand < self.n_frames_buffer
 
-    def show_bool(self):
+    def is_activated(self):
         print(self.frames_since_hand, self.frames_with_hand, self.frames_until_active)
         x = self.frames_since_hand < self.n_frames_buffer and self.frames_until_active == 0
-        # print(x)
+        print(x)
         return x
 
     def iter_states(self):
@@ -60,28 +61,34 @@ class StateController:
         """
         Determines current state of the view
         """
-        defaults = {
-            "frames_since_last": self.frames_since_hand,
-            "frames_with_hand": self.frames_with_hand,
-            "menu_labels": self.radial_menu_labels
-        }
-        self.current_state.update(defaults)
         state = self.current_state.get("state", "menu")
-
-        if self.frames_until_active == 0:
+        if self.is_activated():
             # if there is a hand and not in cooldown
+            self.current_state["activated"] = True
+            print("processing")
+            print(f"old state: {self.current_state}")
+
             color = "#FFFF58"
             middle_pointer_cross_prod_thresh = 0.5
-
             match state:
+                # determine how to update the next state, given the current state
                 case "menu":
                     if self.current_hand is not None:
-                        print(f"NO CLICK {self.hand_oracle.variables["middle_pointer_cross"]} !> {middle_pointer_cross_prod_thresh}")
+                        new_state = {
+                            "selected_index": self.hand_oracle.get_radial_slice_index(self.radial_menu_labels)
+                        }
                         if self.hand_oracle.variables["middle_pointer_cross"] > middle_pointer_cross_prod_thresh:
+                            # select menu item
                             print(f"menu selection here in update state because:")
                             print(f"{self.hand_oracle.variables["middle_pointer_cross"]} > {middle_pointer_cross_prod_thresh}")
-                            state = "select_menu_item"
+                            new_state.update(
+                                {
+                                    "state": "select_menu_item",
+                                }
+                            )
+                        self.current_state.update(new_state)
                 case "volume":
+                    print("processing volume")
                     pass
                 case "play":
                     pass
@@ -90,32 +97,14 @@ class StateController:
                 case _:
                     print(f"DO NOT KNOW WHAT TO DO WITH STATE: {state}")
                     assert False
-
+        else:
             self.current_state.update(
                 {
-                    "selected_index": self.hand_oracle.get_radial_slice_index(self.radial_menu_labels),
-                    "activated": True,
-                    "state": state,
-                    "color": color,
+                    "activated": False,
+                    "state": "menu",
                 }
             )
-        else:
-            if self.show_bool():
-                if self.frames_since_hand < self.n_frames_buffer:
-                    state = "menu"
-                self.current_state.update(
-                    {
-                        "activated": True,
-                        "state": state,
-                    }
-                )
-            else:
-                print("de-activating")
-                self.current_state.update(
-                    {
-                        "activated": False,
-                    }
-                )
+        print(f"new state: {self.current_state}")
 
 
     def perform_actions(self):
@@ -134,7 +123,9 @@ class StateController:
                     elif self.current_state["selected_index"] == 1:
                         self.current_state["state"] = "volume"
                 case "volume":
-                    vol = round(self.hand_oracle.variables["pointer_thumb_cross"]*100)
+                    index_y_component = 50+round(np.sin(self.hand_oracle.variables["radial_angle"])*50)
+                    vol = index_y_component
+                    self.current_state["volume"] = vol
                     print("setting volume to ", vol)
                     success = self.actions.set_volume(vol)
                     # print(success)
