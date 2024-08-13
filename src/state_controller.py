@@ -23,10 +23,11 @@ class StateController:
         self.current_hand = None
         self.logger = logging.getLogger(self.__class__.__name__)
         self.current_state = {"activated": False, "state": "menu", "menu_labels": self.radial_menu_labels}
-        self.n_frames_buffer = 5
+        self.n_frames_buffer = 20
         self.frames_since_hand = 0
         self.frames_with_hand = 0
-        self.frames_until_active = self.n_frames_buffer
+        self.frames_since_click = 0
+        self.frames_until_active = 5
 
         # self.show_bool = lambda: self.frames_since_hand < self.n_frames_buffer
 
@@ -52,6 +53,7 @@ class StateController:
                 self.frames_with_hand = 0
                 self.current_hand = None
             self.frames_until_active = max(self.frames_until_active-1, 0)
+            self.frames_since_click += 1
             self.update_current_state()
             self.perform_actions()
             # print(self.frames_since_hand)
@@ -89,11 +91,20 @@ class StateController:
                         self.current_state.update(new_state)
                 case "volume":
                     print("processing volume")
-                    pass
+                    if self.frames_since_click > self.n_frames_buffer:
+                        if self.current_hand is not None:
+                            if self.hand_oracle.variables["middle_pointer_cross"] > middle_pointer_cross_prod_thresh:
+                                self.current_state.update(
+                                    {
+                                        "state": "volume_close",
+                                    }
+                                )
                 case "play":
                     pass
                 case "select_menu_item":
                     color = "blue"
+                    self.frames_since_click = 0
+
                 case _:
                     print(f"DO NOT KNOW WHAT TO DO WITH STATE: {state}")
                     assert False
@@ -114,6 +125,7 @@ class StateController:
             match self.current_state["state"]:
                 case "select_menu_item":
                     print("SELECTING MENU ITEM")
+                    self.frames_since_click = 0
                     # selecting an item from the ment
                     if self.current_state["selected_index"] == 0:
                         self.actions.toggle_play()
@@ -129,6 +141,16 @@ class StateController:
                     print("setting volume to ", vol)
                     success = self.actions.set_volume(vol)
                     # print(success)
+                case "volume_close":
+                    index_y_component = 50+round(np.sin(self.hand_oracle.variables["radial_angle"])*50)
+                    vol = index_y_component
+                    self.current_state["volume"] = vol
+                    print("setting volume to ", vol)
+                    success = self.actions.set_volume(vol)
+                    self.frames_until_active = 40
+                    self.current_state["state"] = "menu"
+                    self.frames_since_click = 0
+
                 case _:
                     pass
 

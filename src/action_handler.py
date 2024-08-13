@@ -13,7 +13,6 @@ class ActionHandler:
     def __init__(self):
         self.logger = logging.getLogger('ActionHandler')
         self.mouse_sensitivity = 5
-        self.current_volume = 50
         pass
 
     def set_volume(self, volume):
@@ -29,17 +28,6 @@ class ActionHandler:
             self.logger.error('Failed to set volume.', exc_info=True)
             # self.logger.info(traceback.format_exc())
             return False
-
-    def increase_volume(self, amount=1):
-        try:
-            self.current_volume -= amount
-            self.set_volume(self.current_volume)
-            return True
-        except Exception as e:
-            self.logger.error('Failed to set volume.', exc_info=True)
-            # self.logger.info(traceback.format_exc())
-            return False
-
 
     def toggle_play(self):
         try:

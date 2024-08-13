@@ -43,7 +43,7 @@ class DisplayModule(tk.Toplevel):
             end_angle = start_angle + angle_step
 
             if i != selected_index:
-                c = "gray"
+                c = "lightgray"
             else:
                 c = self.color
             # color = "orange" if label == f"{highlight_index}" else "white"
@@ -67,7 +67,19 @@ class DisplayModule(tk.Toplevel):
 
     def draw_volume_icon(self, volume_percentage):
         self.canvas.delete("all")  # Clear the canvas
+        r = min(self.width, self.height) // 4
         cx, cy = self.width // 2, self.width // 2
+        self.canvas.create_arc(
+            cx - r,
+            cy - r,
+            cx + r,
+            cy + r,
+            start=-90,
+            extent=round(3.6*volume_percentage),
+            outline=self.color,
+            width=20,
+            style=tk.ARC
+        )
         volume_text = f"{volume_percentage}%"
         self.canvas.create_text(cx, cy, text=volume_text)
 
