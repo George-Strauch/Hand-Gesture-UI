@@ -1,6 +1,6 @@
 import cv2
 import mediapipe as mp
-
+# https://colab.research.google.com/github/googlesamples/mediapipe/blob/main/examples/pose_landmarker/python/%5BMediaPipe_Python_Tasks%5D_Pose_Landmarker.ipynb
 
 class VideoHandler:
     def __init__(self, from_camera=True, recording=False, detect=True):
