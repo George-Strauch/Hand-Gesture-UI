@@ -12,9 +12,6 @@ This repository contains the source code for hand gesture recognition, state flo
 - **State Transforms**: Transforms between states such as awake / asleep or sub-menus
 - **Actions**: Performs set of specific actions based on recognized gesture and state. In the current context, this is being used to control a smart tv, however it can easily be abstracted to other actions or uses. 
 
-## Setup
-todo
-
 
 ## Project Structure
 ![alternative text](media/model_layout.png)
